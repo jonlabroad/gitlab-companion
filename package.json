@@ -1,0 +1,61 @@
+{
+  "name": "gitlab-organizer",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@material-ui/core": "^4.9.14",
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.5.0",
+    "@testing-library/user-event": "^7.2.1",
+    "@types/jest": "^24.9.1",
+    "@types/node": "^12.12.41",
+    "@types/react": "^16.9.35",
+    "@types/react-dom": "^16.9.8",
+    "apollo-boost": "^0.4.9",
+    "axios": "^0.19.2",
+    "cross-fetch": "^3.0.4",
+    "isomorphic-fetch": "^2.2.1",
+    "node-fetch": "^2.6.0",
+    "qs": "^6.9.4",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-markdown": "^4.3.1",
+    "react-scripts": "3.4.1",
+    "styled-components": "^5.1.0",
+    "typeface-roboto": "0.0.75",
+    "typescript": "^3.7.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "npm run build:background && react-scripts build",
+    "build:background": "webpack --config ./webpack.config.background.js",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "gen-schema": "apollo schema:download --endpoint https://gitlab.com/api/graphql graphql/gitlab.json",
+    "gen-types": "apollo codegen:generate --localSchemaFile=graphql/gitlab.json --target=typescript --includes=src/**/*.ts"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/chrome": "0.0.114",
+    "@types/isomorphic-fetch": "0.0.35",
+    "@types/qs": "^6.9.3",
+    "@types/styled-components": "^5.1.0",
+    "graphql": "^15.0.0",
+    "ts-loader": "^7.0.5",
+    "webpack-cli": "^3.3.11"
+  }
+}
