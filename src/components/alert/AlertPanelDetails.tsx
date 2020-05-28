@@ -8,16 +8,16 @@ import { FlexRow, FlexCol } from "../util/FlexBox";
 import { AlertActionName } from "../AlertActionName";
 import { PushEvent } from "./PushEvent";
 import { UserConfiguration } from "../../config/UserConfiguration";
-import { groupProjects, groupProjects_group_projects_nodes } from "../../service/__generated__/groupProjects";
 import { ProjectPath } from "./ProjectPath";
 import GitlabUtil from "../../util/gitlab/GitlabUtil";
 import GitlabColors from "../../theme/GitlabColors";
 import { CommentEvent } from "./CommentEvent";
+import GitlabProject from "../../service/GitlabProject";
 
 export interface AlertPanelDetailsProps {
     className?: string
     config: UserConfiguration
-    project?: groupProjects_group_projects_nodes | null
+    project: GitlabProject
     event: GitlabEvent
 }
 

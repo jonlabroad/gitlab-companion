@@ -1,8 +1,8 @@
 import Axios from 'axios';
 import qs from 'qs';
 import ApolloClient, { gql } from 'apollo-boost';
-import { groupProjects } from './__generated__/groupProjects';
 import GitlabEvent from './GitlabEvent';
+import GitlabProject from './GitlabProject';
 
 export default class GitlabClient {
     host: string
@@ -23,28 +23,9 @@ export default class GitlabClient {
         })
     }
 
-    public async getGroupProjects(group: string): Promise<groupProjects> {
-        const response = await this.graphQl(gql`
-            query groupProjects {
-                currentUser {
-                    name
-                }
-                group(fullPath: "${group}") {
-                    name
-                    projects {
-                        nodes {
-                            id
-                            name
-                            description
-                            fullPath
-                            avatarUrl
-                            description
-                        }
-                    }
-                }
-            }`
-        );
-        return response.data;
+    public async getGroupProjects(group: string, params: any) : Promise<GitlabProject[]> {
+        const url = `${this.baseUrl}groups/${encodeURIComponent(group)}/projects`;
+        return await this.getWithAuth(url, params) as GitlabProject[];
     }
 
     public async graphQl(query: any): Promise<any> {

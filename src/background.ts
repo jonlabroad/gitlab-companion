@@ -1,9 +1,10 @@
 import GitlabClient from "./service/GitlabClient";
 import { defaultConfiguration, UserConfiguration } from "./config/UserConfiguration";
-import { groupProjects } from "./service/__generated__/groupProjects";
 import GitlabUtil from "./util/gitlab/GitlabUtil";
 import GitlabEvent, { sortEvents } from "./service/GitlabEvent";
 import { AppState, createDefaultAppState } from "./state/AppState";
+import GitlabProject from "./service/GitlabProject";
+import SavedProjectData from "./config/SavedProjectData";
 
 export default class Background {
   protected static configKey = 'config';
@@ -19,11 +20,15 @@ export default class Background {
 
   protected static refreshProjectData(userConfig: UserConfiguration, client: GitlabClient, callback: () => void) {
     userConfig.groups.forEach(group => {
-      client.getGroupProjects(group).then((projects: groupProjects) => {
+      client.getGroupProjects(group, {}).then((projects: GitlabProject[]) => {
 
-        projects.group?.projects.nodes?.forEach(project => {
+        projects.forEach(project => {
           chrome.storage.sync.set({
-            [`project.${GitlabUtil.parseId(project?.id ?? "")}`]: project
+            [`project.${project.id}`]: {
+              id: project.id,
+              path_with_namespace: project.path_with_namespace,
+              avatar_url: project.avatar_url
+            } as SavedProjectData
           });
         });
       })

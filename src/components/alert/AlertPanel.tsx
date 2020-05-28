@@ -7,11 +7,11 @@ import styled from "styled-components";
 import { FlexRow, FlexCol } from "../util/FlexBox";
 import { AlertActionName } from "../AlertActionName";
 import { UserConfiguration } from "../../config/UserConfiguration";
-import { groupProjects, groupProjects_group_projects_nodes } from "../../service/__generated__/groupProjects";
 import { ProjectPath } from "./ProjectPath";
 import GitlabUtil from "../../util/gitlab/GitlabUtil";
 import GitlabColors from "../../theme/GitlabColors";
 import { AlertPanelDetails } from "./AlertPanelDetails";
+import GitlabProject from "../../service/GitlabProject";
 
 const rowHeight = 50;
 
@@ -59,7 +59,7 @@ const AlertDateTime = styled(Typography)`
     color: ${GitlabColors.neutral};
 `;
 
-const EventAlert = (props: {className?: string, config: UserConfiguration, project?: groupProjects_group_projects_nodes, ev: GitlabEvent}) => {
+const EventAlert = (props: {className?: string, config: UserConfiguration, project: GitlabProject, ev: GitlabEvent}) => {
     const {
         config,
         project,
@@ -79,7 +79,7 @@ const EventAlert = (props: {className?: string, config: UserConfiguration, proje
                     <AlertDateTime>{new Date(ev.created_at).toLocaleString()}</AlertDateTime>
                     </ActionAndAuthorCol>
                     <FlexCol>
-                        <ProjectPath config={config} imgSrc={project?.avatarUrl} path={project?.fullPath}/>
+                        <ProjectPath config={config} imgSrc={project.avatar_url} path={project.path_with_namespace}/>
                         <AlertPanelDetails 
                             config={config}
                             project={project}
@@ -96,7 +96,7 @@ const EventAlert = (props: {className?: string, config: UserConfiguration, proje
 
 export interface AlertPanelProps {
     config: UserConfiguration
-    projects?: groupProjects
+    projects: GitlabProject[]
     events: GitlabEvent[]
 }
 
@@ -107,8 +107,8 @@ export const AlertPanel = (props: AlertPanelProps) => {
         projects
     } = props;
 
-    const projectsMapped: Record<string, groupProjects_group_projects_nodes> = {};
-    projects?.group?.projects?.nodes?.forEach(project => projectsMapped[GitlabUtil.parseId(project!.id)] = (project as groupProjects_group_projects_nodes));
+    const projectsMapped: Record<string, GitlabProject> = {};
+    projects.forEach(project => projectsMapped[project.id] = project);
 
     return (
         <AlertPanelContainer>

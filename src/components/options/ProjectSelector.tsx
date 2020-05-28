@@ -1,5 +1,4 @@
 import React from "react";
-import { groupProjects } from "../../service/__generated__/groupProjects";
 import TableContainer from "@material-ui/core/TableContainer";
 import Table from "@material-ui/core/Table";
 import TableRow from "@material-ui/core/TableRow";
@@ -12,6 +11,7 @@ import Typography from "@material-ui/core/Typography";
 import Link from "@material-ui/core/Link";
 import { UserConfiguration } from "../../config/UserConfiguration";
 import GitlabLink from "../../util/gitlab/GitlabLink";
+import GitlabProject from "../../service/GitlabProject";
 
 const rowHeight = 50;
 
@@ -31,7 +31,7 @@ const ProjectName = styled(Typography)`
 
 export interface ProjectSelectorProps {
     config: UserConfiguration
-    groupProjects?: groupProjects
+    groupProjects: GitlabProject[]
 }
 
 export const ProjectSelector = (props: ProjectSelectorProps) => {
@@ -44,13 +44,13 @@ export const ProjectSelector = (props: ProjectSelectorProps) => {
         <TableContainer>
             <Table size="small">
                 <TableBody>
-                    {groupProjects?.group?.projects?.nodes?.map(p => (
+                    {groupProjects.map(p => (
                         <TableRow key={p?.id}>
                             <TableCell padding="none">
-                                <Link target="_blank" color="textPrimary" underline="hover" href={GitlabLink.projectLink(config, p!.fullPath)}>
+                                <Link target="_blank" color="textPrimary" underline="hover" href={GitlabLink.projectLink(config, p.path_with_namespace)}>
                                     <FlexRow alignItems="center">
                                         <ProjectGroupElement>
-                                            <ProjectAvatar imgSrc={p?.avatarUrl ?? undefined} />
+                                            <ProjectAvatar imgSrc={p.avatar_url ?? undefined} />
                                         </ProjectGroupElement>
                                         <ProjectGroupElement>
                                             <ProjectName>{p?.name}</ProjectName>
