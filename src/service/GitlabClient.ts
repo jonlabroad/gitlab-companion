@@ -1,6 +1,5 @@
 import Axios from 'axios';
 import qs from 'qs';
-import ApolloClient, { gql } from 'apollo-boost';
 import GitlabEvent from './GitlabEvent';
 import GitlabProject from './GitlabProject';
 
@@ -14,13 +13,6 @@ export default class GitlabClient {
         this.host = host;
         this.baseUrl = `${host}/api/v4/`
         this.personalAccessToken = personalAccessToken;
-        this.graphql = new ApolloClient({
-            uri: `https://gitlab.com/api/graphql`,
-            headers: {
-                "Authorization": `Bearer ${this.personalAccessToken}`,
-                "Content-Type": "application/json"
-            }
-        })
     }
 
     public async getGroupProjects(group: string, params: any) : Promise<GitlabProject[]> {
