@@ -40,6 +40,7 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
 
     const getEvents = (groupProjects: GitlabProject[], callback: (events: GitlabEvent[]) => void) => {
         if (!chrome?.storage?.local) {
+            console.log("LOCAL MODE");
             const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
             Promise.all(
                 groupProjects.map(async project => {
@@ -66,6 +67,8 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
             getEvents(gp, events => setCurrentEvents(sortEvents(events)));
         });
     }, []);
+
+    console.log("RENDAH");
 
     return (
         <React.Fragment>

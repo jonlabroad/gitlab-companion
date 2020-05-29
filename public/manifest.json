@@ -12,6 +12,7 @@
       "background.js"
     ]
   },
+  "options_page": "options.html",
   "content_security_policy": "script-src 'self' 'sha256-F+SflMaIye9qswbbELTu7Pzds4Vb+UyjYYv9ulEfaZ4='; object-src 'self'",
   "permissions": [
     "background",
