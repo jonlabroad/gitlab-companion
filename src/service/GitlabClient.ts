@@ -2,6 +2,7 @@ import Axios from 'axios';
 import qs from 'qs';
 import GitlabEvent from './GitlabEvent';
 import GitlabProject from './GitlabProject';
+import GitlabGroup from './GitlabGroup';
 
 export default class GitlabClient {
     host: string
@@ -36,6 +37,11 @@ export default class GitlabClient {
 
     public async getProjectEvents(projectId: string | number, params: {[key: string]: string}): Promise<GitlabEvent[]> {
         const url = `${this.baseUrl}projects/${projectId}/events`;
+        return await this.getWithAuth(url, params);
+    }
+
+    public async getUserGroups(params: {[key: string]: string}): Promise<GitlabGroup[]> {
+        const url = `${this.baseUrl}groups`;
         return await this.getWithAuth(url, params);
     }
 

@@ -4,6 +4,8 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import Box from "@material-ui/core/Box";
 import { UserConfiguration, defaultConfiguration } from "../../config/UserConfiguration";
+import GitlabGroup from "../../service/GitlabGroup";
+import { GroupSelector } from "./GroupSelector";
 
 const OptionsContainer = styled.div`
     width: 100%;
@@ -20,6 +22,7 @@ const FormTextField = styled(TextField)`
 
 export const OptionsForm = () => {
     const [config, setConfig] = useState(undefined as UserConfiguration | undefined);
+    const [updatingConfig, setUpdatingConfig] = useState(false);
 
     const saveConfig = (config: UserConfiguration) => {
         chrome.storage.sync.set({
@@ -39,7 +42,7 @@ export const OptionsForm = () => {
         });
     }, []);
 
-    const onConfigChange = (field: string, newValue: string) => {
+    const onConfigChange = (field: string, newValue: any) => {
         const newConfig = {
             ...config ?? {},
             [field]: newValue
@@ -47,6 +50,16 @@ export const OptionsForm = () => {
         
         saveConfig(newConfig);
         setConfig(newConfig);
+
+        if (!updatingConfig) {
+            setUpdatingConfig(true);
+            setTimeout(() => {
+                chrome.runtime.sendMessage({
+                    type: "config_update"
+                });
+                setUpdatingConfig(false);
+            }, 5000);
+        }
     }
 
     return (
@@ -69,6 +82,10 @@ export const OptionsForm = () => {
                         onChange={(ev) => onConfigChange("personalAccessToken", ev.target.value)}
                     />
                 </ElementContainer>
+                <GroupSelector
+                    config ={config}
+                    onGroupsChange={(newGroups: string[]) => onConfigChange("groups", newGroups)}
+                />
             </OptionsContainer>
         </Box>
     );

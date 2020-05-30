@@ -7,6 +7,7 @@ import { AlertPanel } from "./alert/AlertPanel"
 import GitlabUtil from "../util/gitlab/GitlabUtil"
 import styled from "styled-components"
 import GitlabProject from "../service/GitlabProject"
+import { GroupSelector } from "./options/GroupSelector"
 
 const ContentContainer  = styled.div`
     min-width: 700px;
@@ -68,10 +69,13 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
         });
     }, []);
 
-    console.log("RENDAH");
-
     return (
         <React.Fragment>
+            {/*
+            <GroupSelector config={userConfig} onGroupsChange={(groups: string[]) => setUserConfig({
+                ...userConfig,
+                groups
+            })} />*/}
             <ContentContainer>
                 <AlertPanel
                     config={userConfig}
