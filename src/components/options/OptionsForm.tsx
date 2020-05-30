@@ -66,7 +66,7 @@ export const OptionsForm = () => {
         <Box display="flex" flexDirection="column" alignItems="center">
             <OptionsContainer>
                 <ElementContainer><Typography variant="h4">Options</Typography></ElementContainer>
-                <ElementContainer><Typography variant="h6">Gitlab</Typography></ElementContainer>
+                <ElementContainer><Typography variant="h5">Gitlab</Typography></ElementContainer>
                 <ElementContainer>
                     <FormTextField
                         label={"Gitlab Host"}
@@ -82,10 +82,13 @@ export const OptionsForm = () => {
                         onChange={(ev) => onConfigChange("personalAccessToken", ev.target.value)}
                     />
                 </ElementContainer>
-                <GroupSelector
-                    config ={config}
-                    onGroupsChange={(newGroups: string[]) => onConfigChange("groups", newGroups)}
-                />
+                <ElementContainer><Typography variant="h5">Groups</Typography></ElementContainer>
+                <ElementContainer><Typography variant="subtitle1">Select groups to watch</Typography>
+                    <GroupSelector
+                        config ={config}
+                        onGroupsChange={(newGroups: string[]) => onConfigChange("groups", newGroups)}
+                    />
+                </ElementContainer>
             </OptionsContainer>
         </Box>
     );

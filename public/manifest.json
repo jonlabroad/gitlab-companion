@@ -17,7 +17,8 @@
   "permissions": [
     "background",
     "storage",
-    "alarms"
+    "alarms",
+    "notifications"
   ],
   "start_url": ".",
   "display": "standalone",

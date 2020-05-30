@@ -48,23 +48,21 @@ export const GroupSelectorGroupRow = (props: GroupSelectorGroupRowProps) => {
     const isGroupSelected = selectedGroups.includes(group.full_path);
 
     return (
-        <Card>
-            <Box display="flex" flexDirection="row" alignItems="center">
-                <Checkbox 
-                    checked={isGroupSelected}
-                    onClick={onClick}
-                />
-                {group.avatar_url ?
-                    <GroupAvatar imgSrc={group.avatar_url}/> :
-                    <AvatarPlaceholder justifyContent="center" alignItems="center">
-                        {group.name[0].toUpperCase() ?? '?'}
-                    </AvatarPlaceholder>
-                }
-                <GroupSelectorRowPath>
-                    <Typography>{group.full_name}</Typography>
-                </GroupSelectorRowPath>
-            </Box>
-        </Card>
+        <Box display="flex" flexDirection="row" alignItems="center">
+            <Checkbox 
+                checked={isGroupSelected}
+                onClick={onClick}
+            />
+            {group.avatar_url ?
+                <GroupAvatar imgSrc={group.avatar_url}/> :
+                <AvatarPlaceholder justifyContent="center" alignItems="center">
+                    {group.name[0].toUpperCase() ?? '?'}
+                </AvatarPlaceholder>
+            }
+            <GroupSelectorRowPath>
+                <Typography>{group.full_name}</Typography>
+            </GroupSelectorRowPath>
+        </Box>
     );
 }
 

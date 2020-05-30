@@ -5,6 +5,7 @@ import GitlabEvent, { sortEvents } from "./service/GitlabEvent";
 import { AppState, createDefaultAppState } from "./state/AppState";
 import GitlabProject from "./service/GitlabProject";
 import SavedProjectData from "./config/SavedProjectData";
+import Notification from "./util/Notification";
 
 export default class Background {
   protected static configKey = 'config';
@@ -67,14 +68,13 @@ export default class Background {
           const existingEvents = results.events ?? [] as GitlabEvent[];
           const existingEventIds = new Set<string>(existingEvents.map(ev => ev.created_at));
 
-          var projectIds = new Set<string>(Object.keys(items)
-            .filter(key => key.startsWith('project.'))
-            .map(projectKey => projectKey.replace('project.', '')));
+          const projects: SavedProjectData[] = Object.keys(items).filter(key => key.startsWith('project.')).map(key => items[key]);
+          var projectIds = new Set<string>(projects.map(project => `${project.id}`));
     
           projectIds.forEach(projectId => {
             try {
               const afterDate = new Date(appState.lastEventPoll);
-              afterDate.setDate(afterDate.getDate() - 1);
+              afterDate.setDate(afterDate.getDate() - 3);
               eventPromises.push(gitlabClient.getProjectEvents(projectId, {
                 after: `${afterDate.getFullYear()}-${afterDate.getMonth()}-${afterDate.getDate()}`
               }));
@@ -84,18 +84,25 @@ export default class Background {
           });
       
           const eventResults = (await Promise.all(eventPromises)).flat();
-          console.log({eventResults});
 
           // Filter out any that we already have
           const newEvents = eventResults.filter(ev => !existingEventIds.has(ev.created_at));
           if (newEvents.length > 0) {
-            console.log(`NEW EVENTS: ${newEvents.length}`);
+            chrome.browserAction.setBadgeText({
+              text: `${newEvents.length}`
+            });
+
+            Notification.createEvents(projects, newEvents);
           }
-          console.log(existingEvents);
+
           newEvents.push(...existingEvents.filter(ev => projectIds.has(`${ev.project_id}`)));
           sortEvents(newEvents);
           
           chrome.storage.local.set({events: newEvents});
+          Background.setAppState({
+            ...appState,
+            lastEventPoll: new Date().toISOString()
+          })
         });
       });
     });
@@ -143,8 +150,8 @@ export default class Background {
   protected static handleAlarms(alarm: any) {
     switch(alarm.name) {
       case "refreshEvents":
-      Background.handleRefreshEvent();
-      break;
+        Background.handleRefreshEvent();
+        break;
     }
   }
 

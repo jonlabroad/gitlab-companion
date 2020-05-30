@@ -67,6 +67,11 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
             setGroupProjects(gp as GitlabProject[]);
             getEvents(gp, events => setCurrentEvents(sortEvents(events)));
         });
+
+        // Clear badge on open
+        chrome.browserAction.setBadgeText({
+            text: ``
+          });
     }, []);
 
     return (
