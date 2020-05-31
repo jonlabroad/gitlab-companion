@@ -1,6 +1,5 @@
 import GitlabClient from "./service/GitlabClient";
 import { defaultConfiguration, UserConfiguration } from "./config/UserConfiguration";
-import GitlabUtil from "./util/gitlab/GitlabUtil";
 import GitlabEvent, { sortEvents } from "./service/GitlabEvent";
 import { AppState, createDefaultAppState } from "./state/AppState";
 import GitlabProject from "./service/GitlabProject";
@@ -114,8 +113,14 @@ export default class Background {
   protected static async refreshAll() {
     const userConfig = await Background.getUserConfig();
     const client = Background.createClient(userConfig);
-    await Background.refreshProjectData(userConfig, client);
-    await Background.getEvents(Background.createClient(userConfig));
+    try {
+      await Background.refreshProjectData(userConfig, client);
+      await Background.getEvents(Background.createClient(userConfig));
+      Background.setErrorMessages([]);
+    } catch (err) {
+      console.error("Error refreshing Gitlab data", err);
+      Background.setErrorMessages([`Unable to refresh Gitlab data. Check Gitlab host and credentials in the Options menu. ${err.message}`]);
+    }
   }
 
   protected static setAlarms() {
@@ -128,9 +133,7 @@ export default class Background {
 
   protected static subscribeToEvents() {
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-      console.log({message: request});
       if (request.type === "config_update") {
-        console.log("CONFIG UPDATE");
         Background.handleRefreshEvent();
       }
 
@@ -140,7 +143,6 @@ export default class Background {
   }
 
   protected static handleAlarms(alarm: any) {
-    console.log({alarm});
     switch(alarm.name) {
       case "refreshEvents":
         Background.handleRefreshEvent();
@@ -161,6 +163,14 @@ export default class Background {
 
   protected static createClient(userConfig: UserConfiguration) {
     return new GitlabClient(userConfig.gitlabHost, userConfig.personalAccessToken);
+  }
+
+  protected static async setErrorMessages(errorMessages: string[]) {
+    const appState = await Background.getAppState();
+    await Background.setAppState({
+      ...appState,
+      errorMessages: errorMessages
+    });
   }
 }
 

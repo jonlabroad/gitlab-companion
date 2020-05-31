@@ -10,6 +10,7 @@ import GitlabProject from "../service/GitlabProject"
 import { GroupSelector } from "./options/GroupSelector"
 import ChromeStorage from "../util/chrome/ChromeStorage"
 import { CircularProgress, Typography } from "@material-ui/core"
+import { AppState } from "../state/AppState"
 
 const ContentContainer  = styled.div`
     min-width: 700px;
@@ -25,6 +26,7 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
     const [groupProjects, setGroupProjects] = useState([] as GitlabProject[]);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(undefined as string | undefined);
+    const [appState, setAppState] = useState(undefined as AppState | undefined);
 
     async function getGroupProjects() {
         if (!chrome?.storage?.sync) {
@@ -74,7 +76,13 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
             setIsLoading(false);
         }
 
+        async function getAppState() {
+            const result = await ChromeStorage.getLocal(['appState']);
+            setAppState(result?.appState);
+        }
+
         getProjects();
+        getAppState();
         
         // Clear badge on open
         chrome.browserAction.setBadgeText({
@@ -92,6 +100,7 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
             <ContentContainer>
                 {isLoading && <CircularProgress />}
                 {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+                {(appState && appState?.errorMessages?.length > 0) && appState.errorMessages.map(msg => <Typography color="error">{msg}</Typography>)}
                 <AlertPanel
                     config={userConfig}
                     projects={groupProjects}
