@@ -11,6 +11,7 @@ import { GroupSelector } from "./options/GroupSelector"
 import ChromeStorage from "../util/chrome/ChromeStorage"
 import { CircularProgress, Typography } from "@material-ui/core"
 import { AppState } from "../state/AppState"
+import MockGitlabClient from "../mock/MockGitlabClient"
 
 const ContentContainer  = styled.div`
     min-width: 700px;
@@ -30,11 +31,10 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
 
     async function getGroupProjects() {
         if (!chrome?.storage?.sync) {
-            const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
-            return (await Promise.all(defaultConfiguration.groups.map(async group => {
-                const groupProjects = await client.getGroupProjects(defaultConfiguration.groups[0], {})
-                return groupProjects;
-            }))).flat();
+            //const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
+            const client = new MockGitlabClient();
+            const groupProjects = await client.getGroupProjects("mock", {});
+            return groupProjects;
         } else {
             const result = await ChromeStorage.getLocal(null);
             const projects = Object.keys(result).filter(key => key.startsWith('project.')).map(key => result[key]) as GitlabProject[];
@@ -44,16 +44,17 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
 
     const getEvents = async (groupProjects: GitlabProject[], callback: (events: GitlabEvent[]) => void) => {
         if (!chrome?.storage?.local) {
-            const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
+            const client = new MockGitlabClient();
             Promise.all(
                 groupProjects.map(async project => {
                     const afterDate = new Date();
                     afterDate.setDate(afterDate.getDate() - 5);
-                    return await client.getProjectEvents(project.id, {
+                    console.log(project);
+                    return await client.getProjectEvents(project.id.toString(), {
                         after: `${afterDate.getFullYear()}-${afterDate.getMonth()}-${afterDate.getDate()}`
                     });
                 })
-            ).then(allEvents => callback(allEvents.flat()));
+            ).then(allEvents => {console.log(allEvents.flat()); callback(allEvents.flat()); });
         } else {
             const result = await ChromeStorage.getLocal(null);
             const events = (result?.events ?? []) as GitlabEvent[];
@@ -85,9 +86,11 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
         getAppState();
         
         // Clear badge on open
-        chrome.browserAction.setBadgeText({
-            text: ``
-        });
+        if (chrome?.browserAction) {
+            chrome.browserAction.setBadgeText({
+                text: ``
+            });
+        }
     }, []);
 
     return (

@@ -3,8 +3,9 @@ import qs from 'qs';
 import GitlabEvent from './GitlabEvent';
 import GitlabProject from './GitlabProject';
 import GitlabGroup from './GitlabGroup';
+import IGitlabClient from './IGitlabClient';
 
-export default class GitlabClient {
+export default class GitlabClient implements IGitlabClient {
     host: string
     baseUrl: string
     personalAccessToken: string

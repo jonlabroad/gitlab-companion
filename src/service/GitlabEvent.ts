@@ -1,5 +1,5 @@
 export type GitlabAction = "commented on" | "opened" | "deleted" | "pushed to" | "pushed new" | "accepted" | "created" | "updated" | "closed" | "reopened" | "pushed" | "commented" | "merged" | "joined" | "left" | "destroyed" | "expired";
-export type GitlabTarget = "Issue" | "Milestone" | "MergeRquest" | "Note" | "Project" | "Snippet" | "User";
+export type GitlabTarget = "Issue" | "Milestone" | "MergeRequest" | "Note" | "Project" | "Snippet" | "User" | "DiffNote";
 
 export const sortEvents = (events: GitlabEvent[]) => {
   return events.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) ?? [];
@@ -28,8 +28,8 @@ export default interface GitlabEvent {
     title?: string
     project_id: number
     action_name: GitlabAction
-    target_id: number
-    target_type: GitlabTarget
+    target_id?: number
+    target_type?: GitlabTarget
     author_id: number
     target_title: string
     created_at: string
