@@ -6,6 +6,7 @@ import Box from "@material-ui/core/Box";
 import { UserConfiguration, defaultConfiguration } from "../../config/UserConfiguration";
 import GitlabGroup from "../../service/GitlabGroup";
 import { GroupSelector } from "./GroupSelector";
+import ChromeStorage from "../../util/chrome/ChromeStorage";
 
 const OptionsContainer = styled.div`
     width: 100%;
@@ -25,21 +26,22 @@ export const OptionsForm = () => {
     const [updatingConfig, setUpdatingConfig] = useState(false);
 
     const saveConfig = (config: UserConfiguration) => {
-        chrome.storage.sync.set({
+        ChromeStorage.setSync({
             config
         });
     };
 
     useEffect(() => {
-        chrome.storage.sync.get(['config'], function(results) {
+        async function getConfig() {
+            const results = await ChromeStorage.getSync(['config']);
             let config = results.config as UserConfiguration | undefined;
             if (!config) {
                 config = defaultConfiguration;
                 saveConfig(config);
             }
-
             setConfig(config);
-        });
+        }
+        getConfig();
     }, []);
 
     const onConfigChange = (field: string, newValue: any) => {
@@ -79,6 +81,7 @@ export const OptionsForm = () => {
                         label={"Personal Access Token"}
                         type={"password"}
                         value={config?.personalAccessToken ?? ""}
+                        helperText={"Gitlab Personal Access Token with read access to the Gitlab API"}
                         onChange={(ev) => onConfigChange("personalAccessToken", ev.target.value)}
                     />
                 </ElementContainer>

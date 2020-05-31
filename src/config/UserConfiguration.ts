@@ -1,9 +1,7 @@
 export const defaultConfiguration: UserConfiguration = {
     gitlabHost: "https://gitlab.com",
     personalAccessToken: "",
-    groups: [
-        "vistaprint-org/merchandising-technology/hamilton"
-    ]
+    groups: []
 }
 
 export interface UserConfiguration {

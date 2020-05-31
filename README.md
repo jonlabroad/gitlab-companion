@@ -1,4 +1,4 @@
-# Gitlab Organizer
+# Gitlab Companion Chrome Extension
 
 ## Development
 

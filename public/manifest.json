@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "version": "0.1.0",
-  "short_name": "Gitlab Organizer",
-  "name": "Gitlab Organizer",
+  "short_name": "Gitlab Companion",
+  "name": "Gitlab Companion",
   "description": "Monitor alerts and get pipeline info from your important Gitlab projects",
   "browser_action": {
     "default_popup": "index.html"
@@ -11,6 +11,11 @@
     "scripts": [
       "background.js"
     ]
+  },
+  "icons": {
+    "16": "icon/icon-16.png",
+    "48": "icon/icon-48.png",
+    "128": "icon/icon-128.png"
   },
   "options_page": "options.html",
   "content_security_policy": "script-src 'self' 'sha256-F+SflMaIye9qswbbELTu7Pzds4Vb+UyjYYv9ulEfaZ4='; object-src 'self'",

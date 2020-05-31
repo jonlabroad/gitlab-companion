@@ -8,6 +8,8 @@ import GitlabUtil from "../util/gitlab/GitlabUtil"
 import styled from "styled-components"
 import GitlabProject from "../service/GitlabProject"
 import { GroupSelector } from "./options/GroupSelector"
+import ChromeStorage from "../util/chrome/ChromeStorage"
+import { CircularProgress, Typography } from "@material-ui/core"
 
 const ContentContainer  = styled.div`
     min-width: 700px;
@@ -21,27 +23,25 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
     const [userConfig, setUserConfig] = useState(defaultConfiguration);
     const [currentEvents, setCurrentEvents] = useState([] as GitlabEvent[])
     const [groupProjects, setGroupProjects] = useState([] as GitlabProject[]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState(undefined as string | undefined);
 
-    const getProjects = (callback: (groupProjects: any) => void) => {
+    async function getGroupProjects() {
         if (!chrome?.storage?.sync) {
             const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
-            defaultConfiguration.groups.forEach(group => {
-                client.getGroupProjects(defaultConfiguration.groups[0], {}).then(groupProjects => {
-                    callback(groupProjects);
-                });
-            })
-            
+            return (await Promise.all(defaultConfiguration.groups.map(async group => {
+                const groupProjects = await client.getGroupProjects(defaultConfiguration.groups[0], {})
+                return groupProjects;
+            }))).flat();
         } else {
-            chrome.storage.sync.get(null, function(result) {
-                const projects = Object.keys(result).filter(key => key.startsWith('project.')).map(key => result[key]);
-                callback(projects);
-            });
+            const result = await ChromeStorage.getLocal(null);
+            const projects = Object.keys(result).filter(key => key.startsWith('project.')).map(key => result[key]) as GitlabProject[];
+            return projects;
         }
-    };
+    }
 
-    const getEvents = (groupProjects: GitlabProject[], callback: (events: GitlabEvent[]) => void) => {
+    const getEvents = async (groupProjects: GitlabProject[], callback: (events: GitlabEvent[]) => void) => {
         if (!chrome?.storage?.local) {
-            console.log("LOCAL MODE");
             const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
             Promise.all(
                 groupProjects.map(async project => {
@@ -53,25 +53,33 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
                 })
             ).then(allEvents => callback(allEvents.flat()));
         } else {
-            chrome.storage.local.get(null, function(result) {
-                console.log({events: result?.events})
-                const events = (result?.events ?? []) as GitlabEvent[];
-                callback(events);
-            });
+            const result = await ChromeStorage.getLocal(null);
+            const events = (result?.events ?? []) as GitlabEvent[];
+            callback(events);
         }
     };
 
     useEffect(() => {
-        getProjects(function(gp) {
-            console.log(gp);
-            setGroupProjects(gp as GitlabProject[]);
-            getEvents(gp, events => setCurrentEvents(sortEvents(events)));
-        });
+        async function getProjects() {
+            setIsLoading(true);
+            try {
+                const groupProjects = await getGroupProjects();
+                setGroupProjects(groupProjects as GitlabProject[]);
+                await getEvents(groupProjects, events => setCurrentEvents(sortEvents(events)));
+                setErrorMessage(undefined);
+            } catch (err) {
+                console.error(`Error loading projects and events`, err);
+                setErrorMessage(err.toString());
+            }
+            setIsLoading(false);
+        }
 
+        getProjects();
+        
         // Clear badge on open
         chrome.browserAction.setBadgeText({
             text: ``
-          });
+        });
     }, []);
 
     return (
@@ -82,6 +90,8 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
                 groups
             })} />*/}
             <ContentContainer>
+                {isLoading && <CircularProgress />}
+                {errorMessage && <Typography color="error">{errorMessage}</Typography>}
                 <AlertPanel
                     config={userConfig}
                     projects={groupProjects}
