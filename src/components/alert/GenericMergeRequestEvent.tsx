@@ -6,38 +6,29 @@ import { AuthorAvatar } from "./AlertPanel";
 import { FlexCol } from "../util/FlexBox";
 import GitlabColors from "../../theme/GitlabColors";
 import styled from "styled-components";
-import Card from "@material-ui/core/Card";
-import ReactMarkdown from "react-markdown";
-import { MergeRequestTitle } from "./MergeRequestTitle";
-import { UserConfiguration } from "../../config/UserConfiguration";
-import GitlabProject from "../../service/GitlabProject";
 import { BranchName } from "./BranchName";
-
-const CommentContainer = styled(Card)`
-    padding-left: 10px;
-    padding-right: 10px;
-`;
+import GitlabProject from "../../service/GitlabProject";
+import { UserConfiguration } from "../../config/UserConfiguration";
+import { MergeRequestTitle } from "./MergeRequestTitle";
 
 const TargetTitle = styled(MergeRequestTitle)`
     margin-bottom: 5px;
 `;
 
-export interface CommentEventProps {
-    className?: string
+export interface GenericMergeRequestEventProps {
     config: UserConfiguration
     project: GitlabProject
-    event: GitlabEvent
+    event?: GitlabEvent
 }
 
-export const CommentEvent = (props: CommentEventProps) => {
+export const GenericMergeRequestEvent = (props: GenericMergeRequestEventProps) => {
     const {
-        className,
+        event,
         config,
-        project,
-        event
+        project
     } = props;
 
-    if (!event || !event.note) {
+    if (!event || !project) {
         return null;
     }
 
@@ -49,9 +40,6 @@ export const CommentEvent = (props: CommentEventProps) => {
                     project={project}
                     event={event}
                 />
-                <CommentContainer>
-                    <ReactMarkdown source={event.note.body} />
-                </CommentContainer>
             </FlexCol>
         </React.Fragment>
     );

@@ -20,8 +20,27 @@ export interface GitlabNote {
   id: string
   type: string
   body: string
-  
-  // There's other stuff not included
+  author: GitlabAuthor
+  commands_changes: {}
+  confidential: boolean
+  created_at: string
+  noteable_id: number
+  noteable_iid: number
+  noteable_type: string
+  resolvable: boolean
+  resolved: boolean
+  resolved_by: GitlabAuthor
+  system: boolean
+  updated_at: string
+}
+
+export interface GitlabAuthor {
+  name: string
+  username: string
+  id: number
+  state: string
+  avatar_url: string
+  web_url: string
 }
 
 export default interface GitlabEvent {
@@ -29,18 +48,12 @@ export default interface GitlabEvent {
     project_id: number
     action_name: GitlabAction
     target_id?: number
+    target_iid?: number
     target_type?: GitlabTarget
     author_id: number
     target_title: string
     created_at: string
-    author:{
-      name: string
-      username: string
-      id: number
-      state: string
-      avatar_url: string
-      web_url: string
-    }
+    author: GitlabAuthor
     author_username: string
 
     // "pushed to", "pushed new"

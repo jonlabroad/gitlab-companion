@@ -31,9 +31,10 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
 
     async function getGroupProjects() {
         if (!chrome?.storage?.sync) {
-            //const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
-            const client = new MockGitlabClient();
-            const groupProjects = await client.getGroupProjects("mock", {});
+            const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
+            const groupProjects = await client.getGroupProjects(defaultConfiguration.groups[0], {});
+            //const client = new MockGitlabClient();
+            //const groupProjects = await client.getGroupProjects("mock", {});
             return groupProjects;
         } else {
             const result = await ChromeStorage.getLocal(null);
@@ -44,7 +45,8 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
 
     const getEvents = async (groupProjects: GitlabProject[], callback: (events: GitlabEvent[]) => void) => {
         if (!chrome?.storage?.local) {
-            const client = new MockGitlabClient();
+            //const client = new MockGitlabClient();
+            const client = new GitlabClient(defaultConfiguration.gitlabHost, defaultConfiguration.personalAccessToken);
             Promise.all(
                 groupProjects.map(async project => {
                     const afterDate = new Date();

@@ -13,6 +13,7 @@ import GitlabUtil from "../../util/gitlab/GitlabUtil";
 import GitlabColors from "../../theme/GitlabColors";
 import { CommentEvent } from "./CommentEvent";
 import GitlabProject from "../../service/GitlabProject";
+import { GenericMergeRequestEvent } from "./GenericMergeRequestEvent";
 
 export interface AlertPanelDetailsProps {
     className?: string
@@ -35,12 +36,22 @@ export const AlertPanelDetails = (props: AlertPanelDetailsProps) => {
     );
     if (event.push_data) {
         comp = <React.Fragment>
-            <PushEvent event={event}/>
+            <PushEvent
+                config={config}
+                project={project}
+                event={event}
+            />
         </React.Fragment>
-    }
-
-    if (event.note) {
+    } else if (event.note) {
         comp = <CommentEvent
+            config={config}
+            project={project}
+            event={event}
+        />
+    } else if (event.target_type === "MergeRequest") {
+        comp = <GenericMergeRequestEvent
+            config={config}
+            project={project}
             event={event}
         />
     }

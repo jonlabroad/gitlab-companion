@@ -12,6 +12,8 @@ import GitlabUtil from "../../util/gitlab/GitlabUtil";
 import GitlabColors from "../../theme/GitlabColors";
 import { AlertPanelDetails } from "./AlertPanelDetails";
 import GitlabProject from "../../service/GitlabProject";
+import { AuthorName } from "./AuthorName";
+import Link from "@material-ui/core/Link";
 
 const rowHeight = 50;
 
@@ -23,12 +25,7 @@ export const AuthorAvatar = styled(Avatar)`
     max-width: ${rowHeight}px;
 `;
 
-export const AuthorName = styled(Typography)`
-    color: ${GitlabColors.neutral};
-    font-size: 0.75rem;
 
-    margin-right: 10px;
-`;
 
 const AlertPanelContainer = styled.div`
     background-color: #fafafa;
@@ -68,19 +65,19 @@ const EventAlert = (props: {className?: string, config: UserConfiguration, proje
 
     let comp = <React.Fragment>
         <FlexRow>
-            <AuthorAvatar imgSrc={ev.author.avatar_url} />
+            <Link href={ev.author.web_url} target="_blank">
+                <AuthorAvatar imgSrc={ev.author.avatar_url} />
+            </Link>
             <FlexCol>
                 <FlexRow alignContent="center">
                     <ActionAndAuthorCol>
                         <AlertActionNameStyled actionName={ev.action_name}/>
-                        <AuthorName>
-                            {ev.author.name}
-                        </AuthorName>
+                        <AuthorName author={ev.author}/>
                     <AlertDateTime>{new Date(ev.created_at).toLocaleString()}</AlertDateTime>
                     </ActionAndAuthorCol>
                     <FlexCol>
                         <ProjectPath config={config} imgSrc={project.avatar_url} path={project.path_with_namespace}/>
-                        <AlertPanelDetails 
+                        <AlertPanelDetails
                             config={config}
                             project={project}
                             event={ev}
