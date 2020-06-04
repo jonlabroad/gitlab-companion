@@ -49,7 +49,6 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
                 groupProjects.map(async project => {
                     const afterDate = new Date();
                     afterDate.setDate(afterDate.getDate() - 5);
-                    console.log(project);
                     return await client.getProjectEvents(project.id.toString(), {
                         after: `${afterDate.getFullYear()}-${afterDate.getMonth()}-${afterDate.getDate()}`
                     });

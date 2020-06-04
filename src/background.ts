@@ -73,7 +73,7 @@ export default class Background {
         const afterDate = new Date(appState.lastEventPoll);
         afterDate.setDate(afterDate.getDate() - 3);
         eventPromises.push(gitlabClient.getProjectEvents(projectId, {
-          after: `${afterDate.getFullYear()}-${afterDate.getMonth()}-${afterDate.getDate()}`
+          after: `${afterDate.getFullYear()}-${afterDate.getMonth() + 1}-${afterDate.getDate()}`
         }));
       } catch (err) {
         console.error(err);
