@@ -26,14 +26,16 @@ export const OptionsForm = () => {
     const [updatingConfig, setUpdatingConfig] = useState(false);
 
     const saveConfig = (config: UserConfiguration) => {
-        ChromeStorage.setSync({
+        const storage = new ChromeStorage();
+        storage.setSync({
             config
         });
     };
 
     useEffect(() => {
         async function getConfig() {
-            const results = await ChromeStorage.getSync(['config']);
+            const storage = new ChromeStorage();
+            const results = await storage.getSync(['config']);
             let config = results.config as UserConfiguration | undefined;
             if (!config) {
                 config = defaultConfiguration;

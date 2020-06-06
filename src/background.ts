@@ -6,23 +6,28 @@ import GitlabProject from "./service/GitlabProject";
 import SavedProjectData from "./config/SavedProjectData";
 import Notification from "./util/Notification";
 import ChromeStorage from "./util/chrome/ChromeStorage";
+import ChromeAlarms from "./util/chrome/ChromeAlarms";
+import MockChromeAlarms from "./mock/MockChromeAlarms";
+import InMemoryChromeStorage from "./util/chrome/InMemoryChromeStorage";
 
 export default class Background {
   protected static configKey = 'config';
+  protected static storage = !Background.isLocalMode() ? new ChromeStorage() : new InMemoryChromeStorage();
+  protected static alarms = !Background.isLocalMode() ? new ChromeAlarms() : new MockChromeAlarms();
 
   public static async init() {
     Background.subscribeToEvents();
     Background.setAlarms();
     const userConfig = await Background.getUserConfig();
-    const client = Background.createClient(userConfig);
-    await Background.refreshProjectData(userConfig, client);
+    await Background.refreshAll();
   }
 
   protected static async refreshProjectData(userConfig: UserConfiguration, client: GitlabClient) {
     try {
-      const existingData = await ChromeStorage.getLocal(null);
-      const projectIdsToRemove = new Set<string>(Object.keys(existingData).filter(k => k.startsWith('project.')));
-      const dataToWrite: {[key: string]: Object} = {};
+      const existingData = await this.storage.getLocal(null);
+      const appState = existingData.appState as AppState;
+      const projectIdsToRemove = new Set<string>(Object.keys(existingData).filter(k => existingData[k]?.pollEvents && k.startsWith('project.')));
+      const dataToWrite: {[key: string]: SavedProjectData} = {};
       await Promise.all(userConfig.groups.map(async (group) => {
         return client.getGroupProjects(group, {}).then((projects: GitlabProject[]) => {
           projects.forEach(project => {
@@ -30,26 +35,57 @@ export default class Background {
             dataToWrite[`project.${project.id}`] = {
               id: project.id,
               path_with_namespace: project.path_with_namespace,
-              avatar_url: project.avatar_url
+              avatar_url: project.avatar_url,
+              pollEvents: true,
+              mergeRequestsToTrack: []
             } as SavedProjectData
           });
         })
       }));
-      await ChromeStorage.setLocal(dataToWrite);
+
+      const user = await client.getCurrentUser();
+      const mergeRequestsToTrack = await client.getMergeRequestEventsForMyApproval(appState?.lastEventPoll, user.id);
+      const projectMrs: {[key: number]: number[]} = {};
+      mergeRequestsToTrack.forEach(mr => {
+        const projectId = mr.project_id;
+        if (!projectMrs[projectId]) {
+          projectMrs[projectId] = [];
+        }
+        if (mr.target_id) {
+          projectMrs[projectId].push(mr.target_id);
+        }
+      });
+
+      await Promise.all(mergeRequestsToTrack.map(async mr => {
+        const projectKey = `project.${mr.project_id}`;
+        const project = await client.getProjectById(mr.project_id.toString(), {});
+        console.log({mr: project.path_with_namespace});
+        if (!dataToWrite[projectKey]) {
+          dataToWrite[`project.${mr.project_id}`] = {
+            id: project.id,
+            path_with_namespace: project.path_with_namespace,
+            avatar_url: project.avatar_url,
+            pollEvents: false,
+            mergeRequestsToTrack: projectMrs[project.id] ?? []
+          }
+        }
+      }));
+
+      await this.storage.setLocal(dataToWrite);
 
       // Clear out old project cache data
-      await ChromeStorage.removeLocal(Array.from(projectIdsToRemove));
+      await this.storage.removeLocal(Array.from(projectIdsToRemove));
     } catch (err) {
       console.error(err);
     }
   }
 
   protected static async getUserConfig() {
-    const result = await ChromeStorage.getSync([Background.configKey]);
+    const result = await this.storage.getSync([Background.configKey]);
     let userConfig = (result?.config as UserConfiguration);
     if (!userConfig) {
       userConfig = defaultConfiguration;
-      ChromeStorage.setSync({
+      this.storage.setSync({
         config: userConfig
       });
     }
@@ -61,20 +97,30 @@ export default class Background {
     const eventPromises: Promise<GitlabEvent[]>[] = [];
   
     const appState = await Background.getAppState();
-    const localStorage = await ChromeStorage.getLocal(null);
+    const localStorage = await this.storage.getLocal(null);
     const existingEvents = (localStorage.events ?? []) as GitlabEvent[];
     const existingEventIds = new Set<string>(existingEvents.map(ev => ev.created_at));
 
     const projects: SavedProjectData[] = Object.keys(localStorage).filter(key => key.startsWith('project.')).map(key => localStorage[key]);
-    var projectIds = new Set<string>(projects.map(project => `${project.id}`));
-  
+    var projectIds = new Set<string>(projects.filter(project => project.pollEvents).map(project => `${project.id}`));
+
+    const afterDate = new Date(appState.lastEventPoll);
+    afterDate.setDate(afterDate.getDate() - 3);
+
     projectIds.forEach(projectId => {
       try {
-        const afterDate = new Date(appState.lastEventPoll);
-        afterDate.setDate(afterDate.getDate() - 3);
         eventPromises.push(gitlabClient.getProjectEvents(projectId, {
           after: `${afterDate.getFullYear()}-${afterDate.getMonth() + 1}-${afterDate.getDate()}`
         }));
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    var mrProjectIds = new Set<string>(projects.filter(project => project.mergeRequestsToTrack && project.mergeRequestsToTrack.length > 0).map(p => `${p.id}`));
+    mrProjectIds.forEach(projectId => {
+      try {
+        eventPromises.push(Background.getMergeRequestEvents(projectId, projects, gitlabClient, afterDate));
       } catch (err) {
         console.error(err);
       }
@@ -84,7 +130,7 @@ export default class Background {
 
     // Filter out any that we already have
     const newEvents = allEventResults.filter(ev => !existingEventIds.has(ev.created_at));
-    if (newEvents.length > 0) {
+    if (!this.isLocalMode() && newEvents.length > 0) {
       chrome.browserAction.setBadgeText({
         text: `${newEvents.length}`
       });
@@ -92,14 +138,25 @@ export default class Background {
       Notification.createEvents(projects, newEvents);
     }
 
-    newEvents.push(...existingEvents.filter(ev => projectIds.has(`${ev.project_id}`)));
+    newEvents.push(...existingEvents.filter(ev => projectIds.has(`${ev.project_id}`) || mrProjectIds.has(`${ev.project_id}`)));
     sortEvents(newEvents);
     
-    ChromeStorage.setLocal({events: newEvents});
+    this.storage.setLocal({events: newEvents});
     Background.setAppState({
       ...appState,
       lastEventPoll: new Date().toISOString()
     });
+  }
+
+  protected static async getMergeRequestEvents(projectId: string, projects: SavedProjectData[], gitlabClient: GitlabClient, afterDate: Date): Promise<GitlabEvent[]> {
+      const rawEvents = await gitlabClient.getProjectEvents(projectId, {
+        target_type: 'merge_request',
+        after: `${afterDate.getFullYear()}-${afterDate.getMonth() + 1}-${afterDate.getDate()}`
+      })
+      const relevantEvents = rawEvents.filter(ev =>
+        projects.find(p => `${p.id}` === projectId)?.mergeRequestsToTrack.includes(ev.target_id ?? 0)
+      );
+      return relevantEvents;
   }
 
   protected static async handleRefreshEvent() {
@@ -124,25 +181,27 @@ export default class Background {
   }
 
   protected static setAlarms() {
-    chrome.alarms.create("refreshEvents", {
+    this.alarms.create("refreshEvents", {
       when: 0,
       periodInMinutes: 1
     });
-    chrome.alarms.onAlarm.addListener(Background.handleAlarms);
+    this.alarms.addListener(Background.handleAlarms);
   }
 
   protected static subscribeToEvents() {
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-      if (request.type === "config_update") {
-        Background.handleRefreshEvent();
-      }
+    if (!this.isLocalMode()) {
+      chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        if (request.type === "config_update") {
+          Background.handleRefreshEvent();
+        }
 
-      sendResponse();
-    });
-    chrome.alarms.onAlarm.addListener(Background.handleAlarms);
+        sendResponse();
+      });
+    }
   }
 
   protected static handleAlarms(alarm: any) {
+    console.log(`handled: ${alarm.name}`);
     switch(alarm.name) {
       case "refreshEvents":
         Background.handleRefreshEvent();
@@ -151,12 +210,12 @@ export default class Background {
   }
 
   protected static async getAppState(): Promise<AppState> {
-    const result = await ChromeStorage.getLocal(['appState']);
+    const result = await this.storage.getLocal(['appState']);
     return result?.appState ?? createDefaultAppState();
   }
 
   protected static async setAppState(appState: AppState) {
-    await ChromeStorage.setLocal({
+    await this.storage.setLocal({
       appState
     });
   }
@@ -172,6 +231,16 @@ export default class Background {
       errorMessages: errorMessages
     });
   }
+
+  protected static isLocalMode() {
+    return (typeof chrome === 'undefined');
+  }
 }
 
 Background.init();
+
+/*
+setTimeout(() => {
+  setTimeout(() => console.log("running..."), 10000);
+}, 10000);
+*/

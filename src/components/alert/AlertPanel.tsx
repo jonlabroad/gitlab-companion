@@ -109,7 +109,7 @@ export const AlertPanel = (props: AlertPanelProps) => {
 
     return (
         <AlertPanelContainer>
-            {events.slice(0, 29).map(ev => (
+            {events.slice(0, 39).map(ev => (
                 <AlertCard>
                     <FlexRow alignItems="center">
                         <EventAlert config={config} project={projectsMapped[ev!.project_id.toString()]} ev={ev} />

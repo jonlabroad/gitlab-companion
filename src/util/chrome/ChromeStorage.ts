@@ -1,5 +1,7 @@
-export default class ChromeStorage {
-    public static async getSync(keys: string[] | null): Promise<{[key: string]: any}> {
+import IChromeStorage from "./IChromeStorage";
+
+export default class ChromeStorage implements IChromeStorage {
+    public async getSync(keys: string[] | null): Promise<{[key: string]: any}> {
         if (chrome?.storage?.sync) {
             return new Promise((resolve, reject) => {
                 chrome.storage.sync.get(keys, (result: {[key: string]: any}) => {
@@ -10,7 +12,7 @@ export default class ChromeStorage {
         return Promise.resolve({});
     }
 
-    public static async setSync(data: {[key: string]: any}) {
+    public async setSync(data: {[key: string]: any}): Promise<void> {
         if (chrome?.storage?.sync) {
             return new Promise((resolve, reject) => {
                 chrome.storage.sync.set(data, () => {
@@ -18,10 +20,10 @@ export default class ChromeStorage {
                 })
             });
         }
-        return Promise.resolve({});
+        return Promise.resolve();
     }
 
-    public static async removeSync(keys: string[]) {
+    public async removeSync(keys: string[]): Promise<void> {
         if (chrome?.storage?.sync) {
             return new Promise((resolve, reject) => {
                 chrome.storage.sync.remove(keys, () => {
@@ -29,10 +31,10 @@ export default class ChromeStorage {
                 })
             });
         }
-        return Promise.resolve({});
+        return Promise.resolve();
     }
 
-    public static async getLocal(keys: string[] | null): Promise<{[key: string]: any}> {
+    public async getLocal(keys: string[] | null): Promise<{[key: string]: any}> {
         if (chrome?.storage?.local) {
             return new Promise((resolve, reject) => {
                 chrome.storage.local.get(keys, (result: {[key: string]: any}) => {
@@ -43,7 +45,7 @@ export default class ChromeStorage {
     return Promise.resolve({});
     }
 
-    public static async setLocal(data: {[key: string]: any}) {
+    public async setLocal(data: {[key: string]: any}): Promise<void> {
         if (chrome?.storage?.local) {
             return new Promise((resolve, reject) => {
                 chrome.storage.local.set(data, () => {
@@ -51,10 +53,10 @@ export default class ChromeStorage {
                 })
             });
         }
-        return Promise.resolve({});
+        return Promise.resolve();
     }
 
-    public static async removeLocal(keys: string[]) {
+    public async removeLocal(keys: string[]): Promise<void> {
         if (chrome?.storage?.local) {
             return new Promise((resolve, reject) => {
                 chrome.storage.local.remove(keys, () => {
@@ -62,6 +64,6 @@ export default class ChromeStorage {
                 })
             });
         }
-        return Promise.resolve({});
+        return Promise.resolve();
     }
 }
