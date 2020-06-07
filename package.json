@@ -109,6 +109,7 @@
     "@types/isomorphic-fetch": "0.0.35",
     "@types/qs": "^6.9.3",
     "@types/styled-components": "^5.1.0",
+    "copyfiles": "^2.3.0",
     "graphql": "^15.0.0",
     "ts-loader": "^7.0.5",
     "webpack-cli": "^3.3.11"

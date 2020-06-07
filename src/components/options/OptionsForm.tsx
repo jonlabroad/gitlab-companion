@@ -8,6 +8,8 @@ import GitlabGroup from "../../service/GitlabGroup";
 import { GroupSelector } from "./GroupSelector";
 import ChromeStorage from "../../util/chrome/ChromeStorage";
 import ChromeRuntime from "../../util/chrome/ChromeRuntime";
+import Checkbox from "@material-ui/core/Checkbox";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
 
 const OptionsContainer = styled.div`
     width: 100%;
@@ -93,6 +95,23 @@ export const OptionsForm = () => {
                             value={config?.personalAccessToken ?? ""}
                             helperText={"Gitlab Personal Access Token with read access to the Gitlab API"}
                             onChange={(ev) => onConfigChange("personalAccessToken", ev.target.value)}
+                        />
+                    </ElementContainer>
+                </FieldAndLabelContainer>
+                <FieldAndLabelContainer>
+                    <ElementContainer>
+                        <Typography variant="h5">Merge Requests</Typography>
+                    </ElementContainer>
+                    <ElementContainer>
+                        <FormControlLabel
+                            label="Approver"
+                            control={<Checkbox
+                                value={config?.options?.mergeRequestsCreatedByMe}
+                                onClick={() => onConfigChange("options", {
+                                    ...config?.options,
+                                    mergeRequestsCreatedByMe: !config?.options?.mergeRequestsCreatedByMe
+                                })}
+                            />}
                         />
                     </ElementContainer>
                 </FieldAndLabelContainer>
