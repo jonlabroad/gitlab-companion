@@ -7,6 +7,7 @@ import { UserConfiguration, defaultConfiguration } from "../../config/UserConfig
 import GitlabGroup from "../../service/GitlabGroup";
 import { GroupSelector } from "./GroupSelector";
 import ChromeStorage from "../../util/chrome/ChromeStorage";
+import ChromeRuntime from "../../util/chrome/ChromeRuntime";
 
 const OptionsContainer = styled.div`
     width: 100%;
@@ -19,6 +20,10 @@ const ElementContainer = styled.div`
 
 const FormTextField = styled(TextField)`
     width: 100%;
+`;
+
+const FieldAndLabelContainer = styled.div`
+    margin-bottom: 20px;
 `;
 
 export const OptionsForm = () => {
@@ -58,7 +63,7 @@ export const OptionsForm = () => {
         if (!updatingConfig) {
             setUpdatingConfig(true);
             setTimeout(() => {
-                chrome.runtime.sendMessage({
+                ChromeRuntime.sendMessage({
                     type: "config_update"
                 });
                 setUpdatingConfig(false);
@@ -70,30 +75,36 @@ export const OptionsForm = () => {
         <Box display="flex" flexDirection="column" alignItems="center">
             <OptionsContainer>
                 <ElementContainer><Typography variant="h4">Options</Typography></ElementContainer>
-                <ElementContainer><Typography variant="h5">Gitlab</Typography></ElementContainer>
-                <ElementContainer>
-                    <FormTextField
-                        label={"Gitlab Host"}
-                        value={config?.gitlabHost ?? ""}
-                        onChange={(ev) => onConfigChange("gitlabHost", ev.target.value)}
-                    />
-                </ElementContainer>
-                <ElementContainer>
-                    <FormTextField
-                        label={"Personal Access Token"}
-                        type={"password"}
-                        value={config?.personalAccessToken ?? ""}
-                        helperText={"Gitlab Personal Access Token with read access to the Gitlab API"}
-                        onChange={(ev) => onConfigChange("personalAccessToken", ev.target.value)}
-                    />
-                </ElementContainer>
-                <ElementContainer><Typography variant="h5">Groups</Typography></ElementContainer>
-                <ElementContainer><Typography variant="subtitle1">Select groups to watch</Typography>
-                    <GroupSelector
-                        config ={config}
-                        onGroupsChange={(newGroups: string[]) => onConfigChange("groups", newGroups)}
-                    />
-                </ElementContainer>
+                <FieldAndLabelContainer>
+                    <ElementContainer><Typography variant="h5">Gitlab</Typography></ElementContainer>
+                    <ElementContainer>
+                        <FormTextField
+                            label={"Gitlab Host"}
+                            value={config?.gitlabHost ?? ""}
+                            onChange={(ev) => onConfigChange("gitlabHost", ev.target.value)}
+                        />
+                    </ElementContainer>
+                </FieldAndLabelContainer>
+                <FieldAndLabelContainer>
+                    <ElementContainer>
+                        <FormTextField
+                            label={"Personal Access Token"}
+                            type={"password"}
+                            value={config?.personalAccessToken ?? ""}
+                            helperText={"Gitlab Personal Access Token with read access to the Gitlab API"}
+                            onChange={(ev) => onConfigChange("personalAccessToken", ev.target.value)}
+                        />
+                    </ElementContainer>
+                </FieldAndLabelContainer>
+                <FieldAndLabelContainer>
+                    <ElementContainer><Typography variant="h5">Groups</Typography></ElementContainer>
+                    <ElementContainer><Typography variant="subtitle1">Select groups to watch</Typography>
+                        <GroupSelector
+                            config ={config}
+                            onGroupsChange={(newGroups: string[]) => onConfigChange("groups", newGroups)}
+                        />
+                    </ElementContainer>
+                </FieldAndLabelContainer>
             </OptionsContainer>
         </Box>
     );

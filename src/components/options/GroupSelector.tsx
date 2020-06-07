@@ -11,6 +11,12 @@ import Checkbox from "@material-ui/core/Checkbox";
 import styled from "styled-components";
 import { Avatar } from "../Avatar";
 import { FlexRow } from "../util/FlexBox";
+import AddCircleIcon from '@material-ui/icons/AddCircle';
+import RemoveCircleIcon from '@material-ui/icons/RemoveCircle';
+import { WatchedGroups } from "./WatchedGroups";
+import IconButton from "@material-ui/core/IconButton";
+import GitlabColors from "../../theme/GitlabColors";
+import Divider from "@material-ui/core/Divider";
 
 const GroupSelectorRowPath = styled.div`
 
@@ -32,6 +38,10 @@ const AvatarPlaceholder = styled(FlexRow)`
     border-radius: 3px;
 `;
 
+const FilterTextField = styled(TextField)`
+    margin-bottom: 16px;
+`;
+
 export interface GroupSelectorGroupRowProps {
     selectedGroups: string[]
     group: GitlabGroup
@@ -49,10 +59,22 @@ export const GroupSelectorGroupRow = (props: GroupSelectorGroupRowProps) => {
 
     return (
         <Box display="flex" flexDirection="row" alignItems="center">
-            <Checkbox 
-                checked={isGroupSelected}
+            {!isGroupSelected && (
+            <IconButton
+                style={{color: GitlabColors.add}}
                 onClick={onClick}
-            />
+            >
+                <AddCircleIcon />
+            </IconButton>
+            )}
+            {isGroupSelected && (
+            <IconButton
+                style={{color: GitlabColors.delete}}
+                onClick={onClick}
+            >
+                <RemoveCircleIcon />
+            </IconButton>
+            )}
             {group.avatar_url ?
                 <GroupAvatar imgSrc={group.avatar_url}/> :
                 <AvatarPlaceholder justifyContent="center" alignItems="center">
@@ -61,6 +83,35 @@ export const GroupSelectorGroupRow = (props: GroupSelectorGroupRowProps) => {
             }
             <GroupSelectorRowPath>
                 <Typography>{group.full_name}</Typography>
+            </GroupSelectorRowPath>
+        </Box>
+    );
+}
+
+export interface GroupSelectorSelectedGroupRowProps {
+    group: string
+    onClick: () => void
+}
+
+export const GroupSelectorSelectedGroupRow = (props: GroupSelectorSelectedGroupRowProps) => {
+    const {
+        group,
+        onClick
+    } = props;
+
+    return (
+        <Box display="flex" flexDirection="row" alignItems="center">
+            <IconButton
+                style={{color: GitlabColors.delete}}
+                onClick={onClick}
+            >
+                <RemoveCircleIcon />
+            </IconButton>
+            <AvatarPlaceholder justifyContent="center" alignItems="center">
+                {group[0].toUpperCase() ?? '?'}
+            </AvatarPlaceholder>
+            <GroupSelectorRowPath>
+                <Typography>{group}</Typography>
             </GroupSelectorRowPath>
         </Box>
     );
@@ -103,14 +154,29 @@ export const GroupSelector = (props: GroupSelectorProps) => {
             const groups = await client.getUserGroups({
                 search: currentSearchTerm.current
             });
-            setGroups(groups ?? []);
+            setGroups(groups.sort(compareGroups) ?? []);
         }
+    }
+
+    const compareGroups = (a: GitlabGroup, b: GitlabGroup) => {
+        return b.name.localeCompare(a.name);
+    }
+
+    const onGroupSelect = (groupFullPath: string) => {
+        const newGroups = [...props.config?.groups ?? []];
+        const isGroupSelected = newGroups.includes(groupFullPath);
+        if (isGroupSelected) {
+            newGroups.splice(newGroups.findIndex(gPath => gPath === groupFullPath), 1);
+        } else {
+            newGroups.push(groupFullPath);
+        }
+        props.onGroupsChange(newGroups);
     }
 
     return (
         <React.Fragment>
             <Box display="flex" flexDirection="column">
-                <TextField
+                <FilterTextField
                     label="filter"
                     value={searchTerm}
                     onChange={(ev: any) => {
@@ -119,17 +185,23 @@ export const GroupSelector = (props: GroupSelectorProps) => {
                     }}
                 />
                 {isLoading && <CircularProgress />}
-                {groups.map(group => {
-                    return <GroupSelectorGroupRow selectedGroups={props.config?.groups ?? []} group={group} onClick={() => {
-                        const newGroups = [...props.config?.groups ?? []];
-                        const isGroupSelected = newGroups.includes(group.full_path);
-                        if (isGroupSelected) {
-                            newGroups.splice(newGroups.findIndex(gPath => gPath === group.full_path), 1);
-                        } else {
-                            newGroups.push(group.full_path);
-                        }
-                        props.onGroupsChange(newGroups);
-                    }}/>
+                {props.config?.groups?.map(group => {
+                    return (
+                        <GroupSelectorSelectedGroupRow
+                            group={group}
+                            onClick={() => onGroupSelect(group)}
+                        />
+                    );
+                })}
+                {(props.config?.groups ?? []).length > 0 && <Divider />}
+                {groups.filter(g => !props.config?.groups?.includes(g.full_path)).map(group => {
+                    return (
+                        <GroupSelectorGroupRow
+                            selectedGroups={props.config?.groups ?? []}
+                            group={group}
+                            onClick={() => onGroupSelect(group.full_path)}
+                        />
+                    );
                 })}
             </Box>
         </React.Fragment>
