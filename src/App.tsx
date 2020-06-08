@@ -3,6 +3,7 @@ import './App.css';
 import "typeface-roboto";
 import { OrganizerMain } from './components/OrganizerMain';
 import { ThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import { OptionsForm } from './components/options/OptionsForm';
 
 const theme = createMuiTheme({
   typography: {

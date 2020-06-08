@@ -106,7 +106,7 @@ export const OptionsForm = () => {
                         <FormControlLabel
                             label="Approver"
                             control={<Checkbox
-                                value={config?.options?.mergeRequestsCreatedByMe}
+                                checked={config?.options?.mergeRequestsCreatedByMe ?? false}
                                 onClick={() => onConfigChange("options", {
                                     ...config?.options,
                                     mergeRequestsCreatedByMe: !config?.options?.mergeRequestsCreatedByMe
