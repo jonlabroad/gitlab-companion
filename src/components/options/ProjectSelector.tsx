@@ -47,10 +47,10 @@ export const ProjectSelector = (props: ProjectSelectorProps) => {
                     {groupProjects.map(p => (
                         <TableRow key={p?.id}>
                             <TableCell padding="none">
-                                <Link target="_blank" color="textPrimary" underline="hover" href={GitlabLink.projectLink(config, p.path_with_namespace)}>
+                                <Link target="_blank" color="textPrimary" underline="hover" href={GitlabLink.projectLink(config, p?.path_with_namespace)}>
                                     <FlexRow alignItems="center">
                                         <ProjectGroupElement>
-                                            <ProjectAvatar imgSrc={p.avatar_url ?? undefined} />
+                                            <ProjectAvatar imgSrc={p?.avatar_url ?? undefined} />
                                         </ProjectGroupElement>
                                         <ProjectGroupElement>
                                             <ProjectName>{p?.name}</ProjectName>

@@ -17,7 +17,7 @@ export const BranchName = (props: {
 
     return pushType !== "removed" ? (
         <Link
-            href={GitlabLink.projectBranchLink(props.config, props.project.path_with_namespace, props.push_data.ref)}
+            href={GitlabLink.projectBranchLink(props.config, props.project?.path_with_namespace, props.push_data.ref)}
             target="_blank"
         >
             {refName}

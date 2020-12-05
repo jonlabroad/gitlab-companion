@@ -76,7 +76,7 @@ const EventAlert = (props: {className?: string, config: UserConfiguration, proje
                     <AlertDateTime>{new Date(ev.created_at).toLocaleString()}</AlertDateTime>
                     </ActionAndAuthorCol>
                     <FlexCol>
-                        <ProjectPath config={config} imgSrc={project.avatar_url} path={project.path_with_namespace}/>
+                        <ProjectPath config={config} imgSrc={project?.avatar_url} path={project?.path_with_namespace}/>
                         <AlertPanelDetails
                             config={config}
                             project={project}

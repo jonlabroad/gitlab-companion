@@ -16,7 +16,7 @@ export default class Notification {
                     iconUrl: "/icon/icon-128.png",
                     title: `${event.action_name} ${event.target_title ?? ''}`,
                     message: `${event.author.name} ${event.action_name} ${event.target_title ?? event.push_data?.commit_title ?? ''}`,
-                    contextMessage: `${project.path_with_namespace}`
+                    contextMessage: `${project?.path_with_namespace}`
                 } as NotificationOptions);
             }
         });

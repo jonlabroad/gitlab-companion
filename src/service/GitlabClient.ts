@@ -19,15 +19,29 @@ export default class GitlabClient implements IGitlabClient {
         this.personalAccessToken = personalAccessToken;
     }
 
+    public async getAllGroupProjects(group: string, params: any): Promise<GitlabProject[]> {
+        const allProjects: {[key: string]: GitlabProject} = {};
+        let page = 1;
+        let projects: GitlabProject[] = [];
+        do {
+            projects = await this.getGroupProjects(group, {
+                ...params,
+                per_page: "100",
+                page: `${page}`,
+            });
+            projects.forEach(mr => allProjects[mr.id.toString()] = mr);
+            page++;
+        } while (projects.length > 0);
+        return Object.keys(allProjects).map(key => allProjects[key])
+    }
+
     public async getGroupProjects(group: string, params: any) : Promise<GitlabProject[]> {
         const url = `${this.baseUrl}groups/${encodeURIComponent(group)}/projects`;
-        console.log(url);
         return await this.getWithAuth(url, params) as GitlabProject[];
     }
 
     public async getProjectById(id: string, params: any) : Promise<GitlabProject> {
         const url = `${this.baseUrl}projects/${id}`;
-        console.log(url);
         return await this.getWithAuth(url, params) as GitlabProject;
     }
 
@@ -42,31 +56,71 @@ export default class GitlabClient implements IGitlabClient {
 
     public async getCurrentUserEvents(params: {[key: string]: string}) {
         const url = `${this.baseUrl}events`;
-        console.log(url);
         return (await this.getWithAuth(url, params)) as GitlabEvent[];
     }
 
     public async getProjectEvents(projectId: string | number, params: {[key: string]: string}): Promise<GitlabEvent[]> {
         const url = `${this.baseUrl}projects/${projectId}/events`;
-        console.log(url);
         return await this.getWithAuth(url, params);
     }
 
     public async getUserGroups(params: {[key: string]: string}): Promise<GitlabGroup[]> {
         const url = `${this.baseUrl}groups`;
-        console.log(url);
         return await this.getWithAuth(url, params);
+    }
+
+    public async getGroup(groupId: string): Promise<GitlabGroup> {
+        const url = `${this.baseUrl}groups/${encodeURIComponent(groupId)}`;
+        return await this.getWithAuth(url, {});
     }
 
     public async getMergeRequests(params: {[key: string]: string}): Promise<GitlabMergeRequest[]> {
         const url = `${this.baseUrl}merge_requests`;
-        console.log(url);
         return await this.getWithAuth(url, params);
+    }
+
+    public async getGroupMergeRequests(groupId: string, params: {[key: string]: string}): Promise<GitlabMergeRequest[]> {
+        const url = `${this.baseUrl}groups/${encodeURIComponent(groupId)}/merge_requests`;
+        return await this.getWithAuth(url, params);
+    }
+
+    public async getMergeRequestPages(params: {[key: string]: string}): Promise<GitlabMergeRequest[]> {
+        const allMrs: {[key: string]: GitlabMergeRequest} = {};
+        let page = 1;
+        let mrs: GitlabMergeRequest[] = [];
+        do {
+            mrs = await this.getMergeRequests({
+                ...params,
+                page: `${page}`,
+            });
+            mrs.forEach(mr => allMrs[mr.id.toString()] = mr);
+            page++;
+        } while (mrs.length > 0);
+        return Object.keys(allMrs).map(key => allMrs[key])
+    }
+
+    public async getGroupMergeRequestPages(groupId: string, params: {[key: string]: string}): Promise<GitlabMergeRequest[]> {
+        const allMrs: {[key: string]: GitlabMergeRequest} = {};
+        let page = 1;
+        let mrs: GitlabMergeRequest[] = [];
+        const group = await this.getGroup(groupId);
+        if (!group) {
+            return Promise.resolve([]);
+        }
+
+        do {
+            mrs = await this.getGroupMergeRequests(group.id.toString(), {
+                ...params,
+                page: `${page}`
+            });
+            mrs.forEach(mr => allMrs[mr.id.toString()] = mr);
+            page++;
+        } while (mrs.length > 0);
+        return Object.keys(allMrs).map(key => allMrs[key])
     }
 
     public async getCurrentUser() {
         const url = `${this.baseUrl}user`;
-        console.log(url);
         return await this.getWithAuth(url, {}) as GitlabUser;
     }
 
@@ -93,6 +147,7 @@ export default class GitlabClient implements IGitlabClient {
             private_token: this.personalAccessToken
         });
         const urlAuth = `${url}?${stringParams}`;
+        console.log(urlAuth);
         const response = await Axios.get(urlAuth);
         return response.data;
     }

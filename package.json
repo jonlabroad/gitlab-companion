@@ -80,7 +80,7 @@
   "scripts": {
     "start": "node scripts/start.js",
     "start:background": "npm run build:background && npm run run:background",
-    "run:background": "node ./public/background.js",
+    "run:background": "cross-env RUN_LOCAL=true node ./public/background.js",
     "build": "npm run build:background && npm run build:options && node scripts/build.js && npm run copy:options",
     "build:options": "node scripts/build-options.js",
     "build:background": "webpack --config ./webpack.config.background.js",
@@ -110,6 +110,7 @@
     "@types/qs": "^6.9.3",
     "@types/styled-components": "^5.1.0",
     "copyfiles": "^2.3.0",
+    "cross-env": "^7.0.2",
     "graphql": "^15.0.0",
     "ts-loader": "^7.0.5",
     "webpack-cli": "^3.3.11"

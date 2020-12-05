@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import styled from "styled-components";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
@@ -10,6 +10,7 @@ import ChromeStorage from "../../util/chrome/ChromeStorage";
 import ChromeRuntime from "../../util/chrome/ChromeRuntime";
 import Checkbox from "@material-ui/core/Checkbox";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
+import InMemoryChromeStorage from "../../util/chrome/InMemoryChromeStorage";
 
 const OptionsContainer = styled.div`
     width: 100%;
@@ -32,9 +33,10 @@ export const OptionsForm = () => {
     const [config, setConfig] = useState(undefined as UserConfiguration | undefined);
     const [updatingConfig, setUpdatingConfig] = useState(false);
 
+    const storage = useRef(chrome?.storage?.sync ? new ChromeStorage() : new InMemoryChromeStorage());
+
     const saveConfig = (config: UserConfiguration) => {
-        const storage = new ChromeStorage();
-        storage.setSync({
+        storage.current.setSync({
             config
         });
     };

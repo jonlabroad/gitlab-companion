@@ -73,7 +73,7 @@ export const GroupSelectorGroupRow = (props: GroupSelectorGroupRowProps) => {
             </IconButton>
             )}
             {group.avatar_url ?
-                <GroupAvatar imgSrc={group.avatar_url}/> :
+                <GroupAvatar imgSrc={group?.avatar_url}/> :
                 <AvatarPlaceholder justifyContent="center" alignItems="center">
                     {group.name[0].toUpperCase() ?? '?'}
                 </AvatarPlaceholder>

@@ -23,9 +23,9 @@ export const MergeRequestTitle = (props: {
 
     let link = undefined;
     if (event.note) {
-        link = GitlabLink.noteLink(config, project.path_with_namespace, event.note);
+        link = GitlabLink.noteLink(config, project?.path_with_namespace, event.note);
     } else if (event.target_type === "MergeRequest") {
-        link = GitlabLink.mergeRequestLink(config, project.path_with_namespace, event.target_iid ?? 0);
+        link = GitlabLink.mergeRequestLink(config, project?.path_with_namespace, event.target_iid ?? 0);
     }
 
     return link ? (

@@ -9,6 +9,12 @@ import ChromeStorage from "./util/chrome/ChromeStorage";
 import ChromeAlarms from "./util/chrome/ChromeAlarms";
 import MockChromeAlarms from "./mock/MockChromeAlarms";
 import InMemoryChromeStorage from "./util/chrome/InMemoryChromeStorage";
+import EventsProvider from "./data/EventsProvider";
+import ProjectProvider from "./data/ProjectProvider";
+import RunUtil from "./util/RunUtil";
+import MergeRequestProvider from "./data/MergeRequestProvider";
+import { GitlabMergeRequest } from "./service/GitlabMergeRequest";
+import SavedMrData from "./config/SavedMrData";
 
 export default class Background {
   protected static configKey = 'config';
@@ -18,66 +24,23 @@ export default class Background {
   public static async init() {
     Background.subscribeToEvents();
     Background.setAlarms();
-    const userConfig = await Background.getUserConfig();
     await Background.refreshAll();
   }
 
   protected static async refreshProjectData(userConfig: UserConfiguration, client: GitlabClient) {
-    try {
-      const existingData = await this.storage.getLocal(null);
-      const appState = existingData.appState as AppState;
-      const projectIdsToRemove = new Set<string>(Object.keys(existingData).filter(k => existingData[k]?.pollEvents && k.startsWith('project.')));
-      const dataToWrite: {[key: string]: SavedProjectData} = {};
-      await Promise.all(userConfig.groups.map(async (group) => {
-        return client.getGroupProjects(group, {}).then((projects: GitlabProject[]) => {
-          projects.forEach(project => {
-            projectIdsToRemove.delete(`project.${project.id}`);
-            dataToWrite[`project.${project.id}`] = {
-              id: project.id,
-              path_with_namespace: project.path_with_namespace,
-              avatar_url: project.avatar_url,
-              pollEvents: true,
-              mergeRequestsToTrack: []
-            } as SavedProjectData
-          });
-        })
-      }));
 
-      const user = await client.getCurrentUser();
-      const mergeRequestsToTrack = await client.getMergeRequestEventsForMyApproval(appState?.lastEventPoll, user.id);
-      const projectMrs: {[key: number]: number[]} = {};
-      mergeRequestsToTrack.forEach(mr => {
-        const projectId = mr.project_id;
-        if (!projectMrs[projectId]) {
-          projectMrs[projectId] = [];
-        }
-        if (mr.target_id) {
-          projectMrs[projectId].push(mr.target_id);
-        }
-      });
+    const projectProvider = new ProjectProvider(userConfig, this.storage);
+    const dataToWrite = projectProvider.getAllProjects();
 
-      await Promise.all(mergeRequestsToTrack.map(async mr => {
-        const projectKey = `project.${mr.project_id}`;
-        const project = await client.getProjectById(mr.project_id.toString(), {});
-        console.log({mr: project.path_with_namespace});
-        if (!dataToWrite[projectKey]) {
-          dataToWrite[`project.${mr.project_id}`] = {
-            id: project.id,
-            path_with_namespace: project.path_with_namespace,
-            avatar_url: project.avatar_url,
-            pollEvents: false,
-            mergeRequestsToTrack: projectMrs[project.id] ?? []
-          }
-        }
-      }));
+    await this.storage.setLocal(dataToWrite);
 
-      await this.storage.setLocal(dataToWrite);
+    const existingData = await this.storage.getLocal(null);
+    const projectIdsToRemove = new Set<string>(Object.keys(existingData).filter(k => existingData[k]?.pollEvents && k.startsWith('project.')));
+    
+    Object.keys(dataToWrite).forEach(projectKey => projectIdsToRemove.delete(projectKey));
 
-      // Clear out old project cache data
-      await this.storage.removeLocal(Array.from(projectIdsToRemove));
-    } catch (err) {
-      console.error(err);
-    }
+    // Clear out old project cache data
+    //await this.storage.removeLocal(Array.from(projectIdsToRemove));
   }
 
   protected static async getUserConfig() {
@@ -94,69 +57,28 @@ export default class Background {
   }
 
   protected static async getEvents(gitlabClient: GitlabClient) {
-    const eventPromises: Promise<GitlabEvent[]>[] = [];
-  
     const appState = await Background.getAppState();
-    const localStorage = await this.storage.getLocal(null);
-    const existingEvents = (localStorage.events ?? []) as GitlabEvent[];
-    const existingEventIds = new Set<string>(existingEvents.map(ev => ev.created_at));
+    const userConfig = await Background.getUserConfig();
+    const eventProvider = new EventsProvider(userConfig, this.storage);
 
-    const projects: SavedProjectData[] = Object.keys(localStorage).filter(key => key.startsWith('project.')).map(key => localStorage[key]);
-    var projectIds = new Set<string>(projects.filter(project => project.pollEvents).map(project => `${project.id}`));
+    const newEvents = await eventProvider.getEvents(gitlabClient, appState);
 
-    const afterDate = new Date(appState.lastEventPoll);
-    afterDate.setDate(afterDate.getDate() - 3);
-
-    projectIds.forEach(projectId => {
-      try {
-        eventPromises.push(gitlabClient.getProjectEvents(projectId, {
-          after: `${afterDate.getFullYear()}-${afterDate.getMonth() + 1}-${afterDate.getDate()}`
-        }));
-      } catch (err) {
-        console.error(err);
-      }
-    });
-
-    var mrProjectIds = new Set<string>(projects.filter(project => project.mergeRequestsToTrack && project.mergeRequestsToTrack.length > 0).map(p => `${p.id}`));
-    mrProjectIds.forEach(projectId => {
-      try {
-        eventPromises.push(Background.getMergeRequestEvents(projectId, projects, gitlabClient, afterDate));
-      } catch (err) {
-        console.error(err);
-      }
-    });
-    
-    const allEventResults = (await Promise.all(eventPromises)).flat();
-
-    // Filter out any that we already have
-    const newEvents = allEventResults.filter(ev => !existingEventIds.has(ev.created_at));
-    if (!this.isLocalMode() && newEvents.length > 0) {
-      chrome.browserAction.setBadgeText({
-        text: `${newEvents.length}`
-      });
-
-      Notification.createEvents(projects, newEvents);
-    }
-
-    newEvents.push(...existingEvents.filter(ev => projectIds.has(`${ev.project_id}`) || mrProjectIds.has(`${ev.project_id}`)));
-    sortEvents(newEvents);
-    
-    this.storage.setLocal({events: newEvents});
-    Background.setAppState({
-      ...appState,
-      lastEventPoll: new Date().toISOString()
-    });
   }
 
   protected static async getMergeRequestEvents(projectId: string, projects: SavedProjectData[], gitlabClient: GitlabClient, afterDate: Date): Promise<GitlabEvent[]> {
-      const rawEvents = await gitlabClient.getProjectEvents(projectId, {
-        target_type: 'merge_request',
-        after: `${afterDate.getFullYear()}-${afterDate.getMonth() + 1}-${afterDate.getDate()}`
-      })
-      const relevantEvents = rawEvents.filter(ev =>
-        projects.find(p => `${p.id}` === projectId)?.mergeRequestsToTrack.includes(ev.target_id ?? 0)
-      );
-      return relevantEvents;
+    const rawEvents = await gitlabClient.getProjectEvents(projectId, {
+      target_type: 'merge_request',
+      after: `${afterDate.getFullYear()}-${afterDate.getMonth() + 1}-${afterDate.getDate()}`
+    })
+    const relevantEvents = rawEvents.filter(ev =>
+      projects.find(p => `${p.id}` === projectId)?.mergeRequestsToTrack.includes(ev.target_id ?? 0)
+    );
+    return relevantEvents;
+  }
+
+  protected static async getMergeRequests(userConfig: UserConfiguration) {
+    const provider = new MergeRequestProvider(userConfig, this.storage);
+    await provider.getAndSaveAll();
   }
 
   protected static async handleRefreshEvent() {
@@ -173,7 +95,16 @@ export default class Background {
     try {
       await Background.refreshProjectData(userConfig, client);
       await Background.getEvents(Background.createClient(userConfig));
+      await Background.getMergeRequests(userConfig);
       Background.setErrorMessages([]);
+
+      const appState = await Background.getAppState();
+      const pollDate = new Date();
+      pollDate.setDate(pollDate.getDate() - 7);
+      Background.setAppState({
+        ...appState,
+        lastEventPoll: pollDate.toISOString()
+      });
     } catch (err) {
       console.error("Error refreshing Gitlab data", err);
       Background.setErrorMessages([`Unable to refresh Gitlab data. Check Gitlab host and credentials in the Options menu. ${err.message}`]);
@@ -190,7 +121,7 @@ export default class Background {
 
   protected static subscribeToEvents() {
     if (!this.isLocalMode()) {
-      chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+      chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         if (request.type === "config_update") {
           Background.handleRefreshEvent();
         }
@@ -202,7 +133,7 @@ export default class Background {
 
   protected static handleAlarms(alarm: any) {
     console.log(`handled: ${alarm.name}`);
-    switch(alarm.name) {
+    switch (alarm.name) {
       case "refreshEvents":
         Background.handleRefreshEvent();
         break;
@@ -233,7 +164,8 @@ export default class Background {
   }
 
   protected static isLocalMode() {
-    return (typeof chrome === 'undefined');
+    console.log({isLocaleMode: RunUtil.isLocalMode() || (typeof chrome === 'undefined')});
+    return RunUtil.isLocalMode() || (typeof chrome === 'undefined');
   }
 }
 

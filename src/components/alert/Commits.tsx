@@ -19,7 +19,7 @@ export const Commits = (props: {
 
     return (
         <Link
-            href={GitlabLink.commitsLink(props.config, props.project.path_with_namespace, props.push_data)}
+            href={GitlabLink.commitsLink(props.config, props.project?.path_with_namespace, props.push_data)}
             target="_blank"
         >
             <Typography className={props.className}>{`${props.push_data.commit_count} commit${props.push_data.commit_count > 1 ? 's' : ''}`}</Typography>

@@ -3,9 +3,11 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+import { OptionsForm } from './components/options/OptionsForm';
 
 ReactDOM.render(
   <React.StrictMode>
+    {/*<OptionsForm />*/}
     <App />
   </React.StrictMode>,
   document.getElementById('root')

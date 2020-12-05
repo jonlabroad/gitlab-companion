@@ -1,6 +1,6 @@
 export const createDefaultAppState = (): AppState => {
     const lastEventPollDate = new Date();
-    lastEventPollDate.setDate(lastEventPollDate.getDate() - 3);
+    lastEventPollDate.setDate(lastEventPollDate.getDate() - 7);
     return {
         lastEventPoll: lastEventPollDate.toISOString(),
         errorMessages: []
