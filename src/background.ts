@@ -28,19 +28,22 @@ export default class Background {
   }
 
   protected static async refreshProjectData(userConfig: UserConfiguration, client: GitlabClient) {
+    try {
+      const projectProvider = new ProjectProvider(userConfig, this.storage);
+      const dataToWrite = projectProvider.getAllProjects();
 
-    const projectProvider = new ProjectProvider(userConfig, this.storage);
-    const dataToWrite = projectProvider.getAllProjects();
+      await this.storage.setLocal(dataToWrite);
 
-    await this.storage.setLocal(dataToWrite);
+      const existingData = await this.storage.getLocal(null);
+      const projectIdsToRemove = new Set<string>(Object.keys(existingData).filter(k => existingData[k]?.pollEvents && k.startsWith('project.')));
+      
+      Object.keys(dataToWrite).forEach(projectKey => projectIdsToRemove.delete(projectKey));
 
-    const existingData = await this.storage.getLocal(null);
-    const projectIdsToRemove = new Set<string>(Object.keys(existingData).filter(k => existingData[k]?.pollEvents && k.startsWith('project.')));
-    
-    Object.keys(dataToWrite).forEach(projectKey => projectIdsToRemove.delete(projectKey));
-
-    // Clear out old project cache data
-    //await this.storage.removeLocal(Array.from(projectIdsToRemove));
+      // Clear out old project cache data
+      //await this.storage.removeLocal(Array.from(projectIdsToRemove));
+    } catch (err) {
+      console.error(`Error refreshing project data`, err);
+    }
   }
 
   protected static async getUserConfig() {
@@ -164,8 +167,7 @@ export default class Background {
   }
 
   protected static isLocalMode() {
-    console.log({isLocaleMode: RunUtil.isLocalMode() || (typeof chrome === 'undefined')});
-    return RunUtil.isLocalMode() || (typeof chrome === 'undefined');
+    return RunUtil.isLocalMode();
   }
 }
 

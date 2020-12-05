@@ -91,7 +91,6 @@ export const OrganizerMain = (props: OrganizerMainProps) => {
         async function getUserConfig() {
             const result = await storage.current.getSync(["config"]);
             const config: UserConfiguration = result?.config;
-            console.log({config});
             if (config) {
                 setUserConfig(config);
             }

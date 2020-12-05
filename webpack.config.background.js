@@ -23,5 +23,5 @@ module.exports = {
     filename: 'background.js',
     path: path.resolve(__dirname, 'public'),
   },
-  //target: 'node'
+  target: 'node'
 };

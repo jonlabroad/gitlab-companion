@@ -25,8 +25,6 @@ export default class ProjectProvider {
             // Get all projects within the watched group(s)
             await Promise.all(this.config.groups.map(async (group) => {
                 return this.client.getAllGroupProjects(group, {}).then((projects: GitlabProject[]) => {
-                    console.log({group});
-                    console.log({projects: projects.length});
                     projects.forEach(project => {
                         dataToWrite[`project.${project.id}`] = {
                             id: project.id,
@@ -38,7 +36,6 @@ export default class ProjectProvider {
                     });
                 })
             }));
-            console.log(Object.keys(dataToWrite));
 
             // Merge requests where I am an approver
             const user = await this.client.getCurrentUser();
@@ -57,8 +54,13 @@ export default class ProjectProvider {
             // Get all projects for the merge requests we need to track
             await Promise.all(mergeRequestsToTrack.map(async mr => {
                 const projectKey = `project.${mr.project_id}`;
-                const project = await this.client.getProjectById(mr.project_id.toString(), {});
-                if (!dataToWrite[projectKey]) {
+                let project: GitlabProject | undefined = undefined;
+                try {
+                    project = await this.client.getProjectById(mr.project_id.toString(), {});
+                } catch (err) {
+                    console.error(`Error getting project ${mr.project_id}`, err);
+                }
+                if (project && !dataToWrite[projectKey]) {
                     dataToWrite[`project.${mr.project_id}`] = {
                         id: project.id,
                         path_with_namespace: project?.path_with_namespace,

@@ -70,7 +70,6 @@ export default class MockChromeAlarms implements IChromeAlarms {
     protected triggerAlarm(name: string) {
         const alarm = this.getAlarm(name);
         if (alarm) {
-            console.log(this.onAlarm);
             this.onAlarm.forEach(func => func(alarm.alarmDefinition));
         }
     }

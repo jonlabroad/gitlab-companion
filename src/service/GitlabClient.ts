@@ -147,7 +147,6 @@ export default class GitlabClient implements IGitlabClient {
             private_token: this.personalAccessToken
         });
         const urlAuth = `${url}?${stringParams}`;
-        console.log(urlAuth);
         const response = await Axios.get(urlAuth);
         return response.data;
     }
